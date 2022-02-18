@@ -1,16 +1,14 @@
 import './App.css';
 import TodoComponent from "./pages/todo/todo";
-import {useEffect, useState, useRef} from "react";
+import {useEffect, useState} from "react";
+import {token as token_} from "./utils/data";
 
 function App() {
-  const didMountRef = useRef(false);
-  const [token, updateToken] = useState(localStorage.getItem('token') || '');
+  const localToken = localStorage.getItem('token');
+  token_.value = localToken;
+  const [token, updateToken] = useState(localToken || '');
   
   useEffect(() => {
-    if (!didMountRef.current) {
-      return didMountRef.current = true;
-    }
-    didMountRef.current = true;
     localStorage.setItem('token', token);
   }, [token])
 

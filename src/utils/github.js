@@ -7,7 +7,6 @@ export const user = 'yunyuyuan',
   branch = 'master'
 
 export async function post(data) {
-  if (!token.value) return ;
   return await axios.post('https://api.github.com/graphql', {query: data}, {
     headers: {
       Authorization: 'token ' + token.value
@@ -34,6 +33,35 @@ export async function isAuthor() {
       return result.data.data.viewer.login === user;
     }
   } catch (e) { }
+}
+
+/** @description 获取文件内容 */
+export async function getFileContent(path) {
+  try {
+    const result = await post(`query {
+      repository(owner: "${user}", name: "${repo}") {
+        object(expression: "HEAD:${path}") {
+          ... on Blob {
+            text
+          }
+        }
+      }
+    }`);
+    const err = result.data.errors;
+    if (err) {
+      notification.open({
+        message: err[0].type,
+        description: err[0].message
+      })
+    } else {
+      return result.data.data.repository.object.text;
+    }
+  } catch (e) {
+    notification.open({
+      message: 'Error!',
+      description: e.toString(),
+    })
+  }
 }
 
 /** @description 获取最后一个 commit id */
@@ -117,7 +145,7 @@ export async function createCommit(commit='', additions = [], deletions = []) {
   } catch (e) {
     notification.open({
       message: 'Error!',
-      description: e,
+      description: e.toString(),
     })
   }
 }

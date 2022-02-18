@@ -9,7 +9,8 @@ import {
   FieldStringOutlined, CaretUpOutlined, CaretDownOutlined, SyncOutlined
 } from '@ant-design/icons';
 import {token} from "../../utils/data";
-import {isAuthor} from "../../utils/github";
+import {createCommit, getFileContent, isAuthor} from "../../utils/github";
+const path = 'files/todo.json';
 
 export default class TodoComponent extends React.Component {
   id = 1;
@@ -22,16 +23,24 @@ export default class TodoComponent extends React.Component {
       token: props.token,
       
       tokenUpdating: false,
+      todoRefreshing: false,
       todoUpdating: false,
     }
   }
   
   async refreshTodo() {
     this.setState({
-      todoUpdating: true,
+      todoRefreshing: true,
     })
+    const todo = JSON.parse(await getFileContent(path));
     this.setState({
-      todoUpdating: false,
+      todoList: (todo instanceof Array) ? todo.map(v => {
+        return {
+          text: v,
+          id: this.id ++
+        }
+      }) : [],
+      todoRefreshing: false,
     })
   }
   
@@ -87,7 +96,7 @@ export default class TodoComponent extends React.Component {
     token.value = this.state.token;
     const can = await isAuthor();
     if (can) {
-      this.props.updateToken(this.state.token.value);
+      this.props.updateToken(this.state.token);
     } else {
       
     }
@@ -97,8 +106,18 @@ export default class TodoComponent extends React.Component {
     })
   }
   
-  upload() {
-    this.state.todoList.map(v => v.text);
+  async upload() {
+    const content = JSON.stringify(this.state.todoList.map(v => v.text));
+    this.setState({
+      todoRefreshing: true,
+    })
+    await createCommit('[update todo]', [{
+      path,
+      content
+    }]);
+    this.setState({
+      todoRefreshing: false,
+    })
   }
   
   render() {
@@ -108,7 +127,7 @@ export default class TodoComponent extends React.Component {
           className='todo-list'
           size="small"
           header={<h2 className='flex'><SmileOutlined style={{fontSize: '24px', marginRight: '10px'}} />Todo List
-                    <Button loading={this.state.todoUpdating} type='text' onClick={() => this.refreshTodo()} icon={<SyncOutlined/>}/>
+                    <Button loading={this.state.todoRefreshing} type='text' onClick={() => this.refreshTodo()} icon={<SyncOutlined/>}/>
                   </h2>}
           footer={<Button onClick={()=>this.addTodo()} icon={<PlusCircleOutlined />}>添加</Button>}
           bordered
@@ -143,7 +162,7 @@ export default class TodoComponent extends React.Component {
         />
         <div className='foot'>
           <Button type="dashed" icon={<FieldStringOutlined />} onClick={()=>this.setState({isModalVisible: true})}>Token</Button>
-          <Button type="primary" disabled={!this.props.token} icon={<CloudUploadOutlined />} onClick={()=>this.upload()}>提交</Button>
+          <Button type="primary" loading={this.state.todoUpdating} disabled={!this.props.token} icon={<CloudUploadOutlined />} onClick={()=>this.upload()}>提交</Button>
         </div>
         
         <Modal title="Github Token" visible={this.state.isModalVisible} 
