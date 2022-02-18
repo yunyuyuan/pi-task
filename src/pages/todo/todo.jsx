@@ -1,6 +1,6 @@
 import React from "react";
 import './todo.scss';
-import {Button, Input, List, Modal} from "antd";
+import {Button, Input, List, Modal, notification} from "antd";
 import {
   DeleteOutlined,
   PlusCircleOutlined,
@@ -109,14 +109,19 @@ export default class TodoComponent extends React.Component {
   async upload() {
     const content = JSON.stringify(this.state.todoList.map(v => v.text));
     this.setState({
-      todoRefreshing: true,
+      todoUpdating: true,
     })
-    await createCommit('[update todo]', [{
+    const result = await createCommit('[update todo]', [{
       path,
       content
     }]);
+    if (result) {
+      notification.open({
+        message: '更新成功!'
+      })
+    }
     this.setState({
-      todoRefreshing: false,
+      todoUpdating: false,
     })
   }
   
