@@ -1,12 +1,9 @@
 import './App.css';
 import TodoComponent from "./pages/todo/todo";
 import {useEffect, useState} from "react";
-import {token as token_} from "./utils/data";
 
 function App() {
-  const localToken = localStorage.getItem('token');
-  token_.value = localToken;
-  const [token, updateToken] = useState(localToken || '');
+  const [token, updateToken] = useState(localStorage.getItem('token') || '');
   
   useEffect(() => {
     localStorage.setItem('token', token);

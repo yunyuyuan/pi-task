@@ -1,15 +1,14 @@
 import axios from 'axios';
-import {token} from "./data";
 import {notification} from "antd";
 
 export const user = 'yunyuyuan',
   repo = 'pi-task',
   branch = 'master'
 
-export async function post(data) {
+export async function post(data, token) {
   return await axios.post('https://api.github.com/graphql', {query: data}, {
     headers: {
-      Authorization: 'token ' + token.value
+      Authorization: 'token ' + token
     }
   });
 }
@@ -19,13 +18,13 @@ function encodeB64(str) {
 }
 
 /** @description 是否管理员 */
-export async function isAuthor() {
+export async function isAuthor(token) {
   try {
     const result = await post(`query {
     viewer {
       login
     }
-  }`);
+  }`, token);
     const err = result.data.errors;
     if (err) {
       return false;
@@ -36,7 +35,7 @@ export async function isAuthor() {
 }
 
 /** @description 获取文件内容 */
-export async function getFileContent(path) {
+export async function getFileContent(path, token) {
   try {
     const result = await post(`query {
       repository(owner: "${user}", name: "${repo}") {
@@ -46,7 +45,7 @@ export async function getFileContent(path) {
           }
         }
       }
-    }`);
+    }`, token);
     const err = result.data.errors;
     if (err) {
       notification.open({
@@ -65,7 +64,7 @@ export async function getFileContent(path) {
 }
 
 /** @description 获取最后一个 commit id */
-async function getCommitId() {
+async function getCommitId(token) {
   const result = await post(`query {
     repository(name: "${repo}", owner: "${user}") {
       defaultBranchRef {
@@ -80,7 +79,7 @@ async function getCommitId() {
         }
       }
     }
-  }`);
+  }`, token);
   const err = result.data.errors;
   if(err) {
     notification.open({
@@ -93,7 +92,7 @@ async function getCommitId() {
 }
 
 /** @description 提交 Github commit */
-export async function createCommit(commit='', additions = [], deletions = []) {
+export async function createCommit(token, commit='', additions = [], deletions = []) {
   let add = '',
     del = '';
   if (additions.length) {
@@ -111,7 +110,7 @@ export async function createCommit(commit='', additions = [], deletions = []) {
     del += ']';
   }
   try {
-    const commitId = await getCommitId();
+    const commitId = await getCommitId(token);
     if (!commitId) return false;
     const result = await post(`mutation {
     createCommitOnBranch(
@@ -132,7 +131,7 @@ export async function createCommit(commit='', additions = [], deletions = []) {
     ) {
       clientMutationId
     }
-  }`);
+  }`, token);
     const err = result.data.errors;
     if (err) {
       notification.open({

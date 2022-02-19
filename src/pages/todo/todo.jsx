@@ -8,7 +8,6 @@ import {
   CloudUploadOutlined,
   FieldStringOutlined, CaretUpOutlined, CaretDownOutlined, SyncOutlined
 } from '@ant-design/icons';
-import {token} from "../../utils/data";
 import {createCommit, getFileContent, isAuthor} from "../../utils/github";
 const path = 'files/todo.json';
 
@@ -20,7 +19,7 @@ export default class TodoComponent extends React.Component {
     this.state = {
       todoList: [],
       isModalVisible: false,
-      token: props.token,
+      tokenInput: props.token,
       
       tokenUpdating: false,
       todoRefreshing: false,
@@ -32,16 +31,23 @@ export default class TodoComponent extends React.Component {
     this.setState({
       todoRefreshing: true,
     })
-    const todo = JSON.parse(await getFileContent(path));
-    this.setState({
-      todoList: (todo instanceof Array) ? todo.map(v => {
-        return {
-          text: v,
-          id: this.id ++
-        }
-      }) : [],
-      todoRefreshing: false,
-    })
+    const result = await getFileContent(path, this.props.token);
+    if (typeof result === 'string' && result.startsWith('[')) {
+      const todo = JSON.parse(result);
+      this.setState({
+        todoList: (todo instanceof Array) ? todo.map(v => {
+          return {
+            text: v,
+            id: this.id++
+          }
+        }) : [],
+        todoRefreshing: false,
+      })
+    } else {
+      this.setState({
+        todoRefreshing: false,
+      })
+    }
   }
   
   addTodo() {
@@ -83,22 +89,14 @@ export default class TodoComponent extends React.Component {
     })
   }
   
-  updateToken(event) {
-    this.setState({
-      token: event.target.value,
-    });
-  }
-  
   async setToken() {
+    const token = this.state.tokenInput;
     this.setState({
       tokenUpdating: true,
     })
-    token.value = this.state.token;
-    const can = await isAuthor();
-    if (can) {
-      this.props.updateToken(this.state.token);
-    } else {
-      
+    const can = await isAuthor(token);
+    if (can || token === '') {
+      this.props.updateToken(token);
     }
     this.setState({
       tokenUpdating: false,
@@ -111,7 +109,7 @@ export default class TodoComponent extends React.Component {
     this.setState({
       todoUpdating: true,
     })
-    const result = await createCommit('[update todo]', [{
+    const result = await createCommit(this.props.token, '[update todo]', [{
       path,
       content
     }]);
@@ -175,8 +173,8 @@ export default class TodoComponent extends React.Component {
                confirmLoading={this.state.tokenUpdating}>
           <Input 
             size='large'
-            value={this.state.token} 
-            onChange={(event)=>this.updateToken(event)}/>
+            value={this.state.tokenInput} 
+            onChange={(event)=>this.setState({tokenInput: event.target.value})}/>
         </Modal>
       </div>
     )
