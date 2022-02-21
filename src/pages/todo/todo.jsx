@@ -30,6 +30,7 @@ export default class TodoComponent extends React.Component {
   }
   
   async refreshTodo() {
+    if (this.errPwd()) return;
     this.setState({
       todoRefreshing: true,
     })
@@ -38,7 +39,7 @@ export default class TodoComponent extends React.Component {
       const result = decrypt(result_, this.state.pwdInput);
       if (result.startsWith('[')) {
         const todo = JSON.parse(result);
-        this.setState({
+        return this.setState({
           todoList: (todo instanceof Array) ? todo.map(v => {
             return {
               text: v,
@@ -48,16 +49,15 @@ export default class TodoComponent extends React.Component {
           todoRefreshing: false,
         })
       }
-    } else {
-      this.setState({
-        todoRefreshing: false,
-      })
     }
+    this.setState({
+      todoRefreshing: false,
+    })
   }
   
   setPwd() {
     this.setState({isPwdModalVisible: false});
-    this.refreshTodo();
+    this.refreshTodo().then();
   }
   
   addTodo() {
@@ -115,12 +115,7 @@ export default class TodoComponent extends React.Component {
   }
   
   async upload() {
-    if (!this.state.pwdInput) {
-      return notification.error({
-        message: '错误',
-        description: 'pwd不能为空!'
-      })
-    }
+    if (this.errPwd()) return;
     const content = JSON.stringify(this.state.todoList.map(v => v.text));
     this.setState({
       todoUpdating: true,
@@ -137,6 +132,16 @@ export default class TodoComponent extends React.Component {
     this.setState({
       todoUpdating: false,
     })
+  }
+  
+  errPwd() {
+    if (!this.state.pwdInput) {
+      notification.error({
+        message: '错误',
+        description: 'pwd不能为空!'
+      })
+      return true;
+    }
   }
   
   render() {
