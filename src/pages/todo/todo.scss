@@ -21,7 +21,7 @@
   }
   .foot {
     margin: 15px 0 0 auto;
-    button:first-of-type {
+    button:not(:last-of-type) {
       margin-right: 10px;
     }
   }

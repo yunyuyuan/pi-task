@@ -1,4 +1,5 @@
 import axios from 'axios';
+import CryptoJS from 'crypto-js';
 import {notification} from "antd";
 
 export const user = 'yunyuyuan',
@@ -48,7 +49,7 @@ export async function getFileContent(path, token) {
     }`, token);
     const err = result.data.errors;
     if (err) {
-      notification.open({
+      notification.warn({
         message: err[0].type,
         description: err[0].message
       })
@@ -56,7 +57,7 @@ export async function getFileContent(path, token) {
       return result.data.data.repository.object.text;
     }
   } catch (e) {
-    notification.open({
+    notification.error({
       message: 'Error!',
       description: e.toString(),
     })
@@ -82,7 +83,7 @@ async function getCommitId(token) {
   }`, token);
   const err = result.data.errors;
   if(err) {
-    notification.open({
+    notification.warn({
       message: err[0].type,
       description: err[0].message
     })
@@ -134,7 +135,7 @@ export async function createCommit(token, commit='', additions = [], deletions =
   }`, token);
     const err = result.data.errors;
     if (err) {
-      notification.open({
+      notification.warn({
         message: err[0].type,
         description: err[0].message
       })
@@ -142,9 +143,34 @@ export async function createCommit(token, commit='', additions = [], deletions =
     }
     return true;
   } catch (e) {
-    notification.open({
+    notification.error({
       message: 'Error!',
       description: e.toString(),
     })
+  }
+}
+
+// 加密解密
+export function encrypt(text, pwd) {
+  try {
+    return CryptoJS.AES.encrypt(text, pwd).toString();
+  } catch (e) {
+    notification.error({
+      message: '加密失败',
+      description: e.toString(),
+    });
+    throw e;
+  }
+}
+
+export function decrypt(text, pwd) {
+  try {
+    return CryptoJS.AES.decrypt(text, pwd).toString(CryptoJS.enc.Utf8) || text;
+  } catch (e) {
+    notification.error({
+      message: '解密失败',
+      description: e.toString(),
+    })
+    throw e;
   }
 }

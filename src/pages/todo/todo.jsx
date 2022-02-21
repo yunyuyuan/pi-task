@@ -6,9 +6,9 @@ import {
   PlusCircleOutlined,
   SmileOutlined,
   CloudUploadOutlined,
-  FieldStringOutlined, CaretUpOutlined, CaretDownOutlined, SyncOutlined
+  FieldStringOutlined, CaretUpOutlined, CaretDownOutlined, SyncOutlined, EyeInvisibleOutlined
 } from '@ant-design/icons';
-import {createCommit, getFileContent, isAuthor} from "../../utils/github";
+import {createCommit, encrypt, decrypt, getFileContent, isAuthor} from "../../utils/github";
 const path = 'files/todo.json';
 
 export default class TodoComponent extends React.Component {
@@ -19,7 +19,9 @@ export default class TodoComponent extends React.Component {
     this.state = {
       todoList: [],
       isModalVisible: false,
+      isPwdModalVisible: false,
       tokenInput: props.token,
+      pwdInput: '',
       
       tokenUpdating: false,
       todoRefreshing: false,
@@ -31,23 +33,31 @@ export default class TodoComponent extends React.Component {
     this.setState({
       todoRefreshing: true,
     })
-    const result = await getFileContent(path, this.props.token);
-    if (typeof result === 'string' && result.startsWith('[')) {
-      const todo = JSON.parse(result);
-      this.setState({
-        todoList: (todo instanceof Array) ? todo.map(v => {
-          return {
-            text: v,
-            id: this.id++
-          }
-        }) : [],
-        todoRefreshing: false,
-      })
+    const result_ = await getFileContent(path, this.props.token);
+    if (typeof result_ === 'string') {
+      const result = decrypt(result_, this.state.pwdInput);
+      if (result.startsWith('[')) {
+        const todo = JSON.parse(result);
+        this.setState({
+          todoList: (todo instanceof Array) ? todo.map(v => {
+            return {
+              text: v,
+              id: this.id++
+            }
+          }) : [],
+          todoRefreshing: false,
+        })
+      }
     } else {
       this.setState({
         todoRefreshing: false,
       })
     }
+  }
+  
+  setPwd() {
+    this.setState({isPwdModalVisible: false});
+    this.refreshTodo();
   }
   
   addTodo() {
@@ -105,16 +115,22 @@ export default class TodoComponent extends React.Component {
   }
   
   async upload() {
+    if (!this.state.pwdInput) {
+      return notification.error({
+        message: '错误',
+        description: 'pwd不能为空!'
+      })
+    }
     const content = JSON.stringify(this.state.todoList.map(v => v.text));
     this.setState({
       todoUpdating: true,
     })
     const result = await createCommit(this.props.token, '[update todo]', [{
       path,
-      content
+      content: encrypt(content, this.state.pwdInput)
     }]);
     if (result) {
-      notification.open({
+      notification.success({
         message: '更新成功!'
       })
     }
@@ -164,6 +180,7 @@ export default class TodoComponent extends React.Component {
             </List.Item>}
         />
         <div className='foot'>
+          <Button type="dashed" icon={<EyeInvisibleOutlined />} onClick={()=>this.setState({isPwdModalVisible: true})}>Pwd</Button>
           <Button type="dashed" icon={<FieldStringOutlined />} onClick={()=>this.setState({isModalVisible: true})}>Token</Button>
           <Button type="primary" loading={this.state.todoUpdating} disabled={!this.props.token} icon={<CloudUploadOutlined />} onClick={()=>this.upload()}>提交</Button>
         </div>
@@ -175,6 +192,14 @@ export default class TodoComponent extends React.Component {
             size='large'
             value={this.state.tokenInput} 
             onChange={(event)=>this.setState({tokenInput: event.target.value})}/>
+        </Modal>
+        
+        <Modal title="Encrypt Password" visible={this.state.isPwdModalVisible} 
+               onOk={()=>this.setPwd()} onCancel={()=>this.setState({isPwdModalVisible: false})}>
+          <Input 
+            size='large'
+            value={this.state.pwdInput} 
+            onChange={(event)=>this.setState({pwdInput: event.target.value})}/>
         </Modal>
       </div>
     )
