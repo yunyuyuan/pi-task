@@ -1,0 +1,28 @@
+.--page-todo {
+  padding: 50px;
+  align-items: stretch;
+  h2 {
+    button {
+      margin-left: auto;
+    }
+  }
+  .todo-list {
+    .todo-item {
+      width: 600px;
+      margin: auto;
+      b {
+        font-size: 16px;
+        margin-right: 10px;
+      }
+      button {
+        margin-left: 10px;
+      }
+    }
+  }
+  .foot {
+    margin: 15px 0 0 auto;
+    button:not(:last-of-type) {
+      margin-right: 10px;
+    }
+  }
+}
